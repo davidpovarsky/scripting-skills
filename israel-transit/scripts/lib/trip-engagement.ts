@@ -13,7 +13,6 @@ type TripActionResult = { ok: boolean; message: string }
 type CompanionResult = { ok?: boolean; message?: string }
 
 const COMPANION_NAME = "israel_transit_companion"
-const COMPANION_VERSION = "1.3.0"
 const SKILL_ROOT = "/var/mobile/Library/Mobile Documents/iCloud~com~thomfang~Scripting/Documents/scripting-skills/israel-transit"
 const COMPANION_SOURCE = Path.join(SKILL_ROOT, "assets", COMPANION_NAME)
 const COMPANION_FILES = ["index.tsx", "app_intents.tsx", "live_activity.tsx", "notification.tsx", "widget.tsx", "script.json"]
@@ -25,7 +24,7 @@ function linesFor(itinerary: Itinerary): string {
     .map(leg => decodeDisplayText(leg.route).trim())
     .filter(Boolean)
     .filter((value, index, all) => all.indexOf(value) === index)
-    .join(" \u2192 ")
+    .join(" → ")
 }
 
 function currentLeg(itinerary: Itinerary, now: number): Leg | undefined {
@@ -34,8 +33,8 @@ function currentLeg(itinerary: Itinerary, now: number): Leg | undefined {
 
 function stepLabel(leg?: Leg): string {
   if (!leg) return ""
-  if (leg.mode === "WALK") return `\u05d4\u05dc\u05d9\u05db\u05d4: ${decodeDisplayText(leg.from.name)} \u2192 ${decodeDisplayText(leg.to.name)}`
-  return `\u05e7\u05d5 ${decodeDisplayText(leg.route)}: ${decodeDisplayText(leg.from.name)} \u2192 ${decodeDisplayText(leg.to.name)}`
+  if (leg.mode === "WALK") return `הליכה: ${decodeDisplayText(leg.from.name)} → ${decodeDisplayText(leg.to.name)}`
+  return `קו ${decodeDisplayText(leg.route)}: ${decodeDisplayText(leg.from.name)} → ${decodeDisplayText(leg.to.name)}`
 }
 
 function compactLegs(itinerary: Itinerary) {
@@ -73,9 +72,8 @@ function tripPayload(input: TripActionInput) {
   }
 }
 
-async function installedVersion(targetDir: string): Promise<string | undefined> {
+async function manifestVersion(configPath: string): Promise<string | undefined> {
   try {
-    const configPath = Path.join(targetDir, "script.json")
     if (!(await FileManager.exists(configPath))) return undefined
     const raw = await FileManager.readAsString(configPath)
     return String(JSON.parse(raw)?.version || "") || undefined
@@ -86,7 +84,11 @@ async function installedVersion(targetDir: string): Promise<string | undefined> 
 
 async function ensureCompanionProject(): Promise<void> {
   const targetDir = Path.join(FileManager.scriptsDirectory, COMPANION_NAME)
-  let ready = (await installedVersion(targetDir)) === COMPANION_VERSION
+  const sourceConfig = Path.join(COMPANION_SOURCE, "script.json")
+  const sourceVersion = await manifestVersion(sourceConfig)
+  if (!sourceVersion) throw new Error("Missing or invalid companion source: script.json")
+
+  let ready = (await manifestVersion(Path.join(targetDir, "script.json"))) === sourceVersion
   if (ready) {
     for (const file of COMPANION_FILES) {
       if (!(await FileManager.exists(Path.join(targetDir, file)))) { ready = false; break }
@@ -101,8 +103,6 @@ async function ensureCompanionProject(): Promise<void> {
     if (!(await FileManager.exists(source))) throw new Error(`Missing companion source: ${file}`)
     await FileManager.writeAsString(Path.join(targetDir, file), await FileManager.readAsString(source))
   }
-  const sourceConfig = Path.join(COMPANION_SOURCE, "script.json")
-  if (!(await FileManager.exists(sourceConfig))) throw new Error("Missing companion source: script.json")
   await FileManager.writeAsString(Path.join(targetDir, "script.json"), await FileManager.readAsString(sourceConfig))
 }
 
