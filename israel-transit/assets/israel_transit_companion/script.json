@@ -1,6 +1,6 @@
 {
   "contributors": [],
-  "description": "Companion Scripting project for Israel Transit rich notifications, Live Activities, and widgets. Kept in sync with the parent Israel Transit skill by its GitHub auto-updater.",
+  "description": "Companion Scripting project for Israel Transit rich notifications, Live Activities, and widgets. Updated by Scripting from the canonical GitHub repository.",
   "intentInputTypes": [],
   "iconImage": null,
   "localizedNames": {
@@ -17,7 +17,10 @@
   "author": null,
   "icon": "bus.fill",
   "color": "rgba(0,122,255,1)",
-  "remoteResource": null,
+  "remoteResource": {
+    "url": "https://github.com/davidpovarsky/scripting-skills/tree/main/israel-transit/assets/israel_transit_companion",
+    "autoUpdateInterval": 21600
+  },
   "localizedDescriptions": {
     "it": "",
     "es": "",
@@ -25,13 +28,13 @@
     "fr": "",
     "pt": "",
     "ru": "",
-    "en": "Background companion for transit departure reminders, rich notification UI, Live Activities, and the current-trip widget. Updated together with the Israel Transit skill.",
+    "en": "Background companion for transit departure reminders, rich notification UI, Live Activities, and the current-trip widget. Scripting keeps it updated from GitHub.",
     "zh": "",
     "de": ""
   },
   "permissions": null,
   "runInApp": false,
-  "version": "1.4.0",
+  "version": "1.4.1",
   "name": "israel_transit_companion",
   "entry": "index.tsx"
 }
