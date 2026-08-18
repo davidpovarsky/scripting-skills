@@ -1,6 +1,6 @@
 {
   "contributors": [],
-  "description": "Companion Scripting project for Israel Transit rich notifications, Live Activities, and widgets.",
+  "description": "Companion Scripting project for Israel Transit rich notifications, Live Activities, and widgets. Kept in sync with the parent Israel Transit skill by its GitHub auto-updater.",
   "intentInputTypes": [],
   "iconImage": null,
   "localizedNames": {
@@ -25,13 +25,13 @@
     "fr": "",
     "pt": "",
     "ru": "",
-    "en": "Background companion for transit departure reminders, rich notification UI, Live Activities, and the current-trip widget.",
+    "en": "Background companion for transit departure reminders, rich notification UI, Live Activities, and the current-trip widget. Updated together with the Israel Transit skill.",
     "zh": "",
     "de": ""
   },
   "permissions": null,
   "runInApp": false,
-  "version": "1.3.0",
+  "version": "1.4.0",
   "name": "israel_transit_companion",
   "entry": "index.tsx"
 }
