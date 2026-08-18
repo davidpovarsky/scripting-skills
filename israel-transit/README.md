@@ -1,4 +1,4 @@
-# Israel Transit for Scripting — V3.0.1
+# Israel Transit for Scripting — V4.3.0
 
 A native Scripting skill for Israeli public transport.
 
@@ -12,6 +12,21 @@ There is no Assistant Tool. Rich UI follows the same pattern as `rich-maps`:
 4. Heavy geometry/realtime data never passes through the model context.
 
 For text-only reasoning, `scripts/query.ts` returns a compact `{ok, action, summary, facts, warnings, sources}` object.
+
+## Automatic GitHub updates
+
+The `main` branch of `davidpovarsky/scripting-skills`, under `israel-transit/`, is the source of truth for the complete skill.
+
+- `scripts/lib/auto-update.ts` checks the remote `skill.json` before normal rich and compact transit requests.
+- Checks are throttled to once every six hours so normal transit usage does not repeatedly hit GitHub.
+- When the remote `skill.json.version` is newer, the updater downloads the complete `israel-transit/` subtree first and only then writes the installed files.
+- The bundled `assets/israel_transit_companion/` files are mirrored at the same time into `FileManager.scriptsDirectory/israel_transit_companion`, so the Skill and its regular Scripting companion stay on the same release.
+- `skill.json` and the companion `script.json` are written last. If a filesystem write fails midway, the old version remains visible and a later invocation retries.
+- Update failures are best-effort and never replace a transit answer with an updater error.
+
+Every distributable change must bump `skill.json.version`. When companion files change, also bump `assets/israel_transit_companion/script.json.version`.
+
+> Bootstrap note: an installation that predates 4.3.0 does not yet contain the updater itself. Install/sync 4.3.0 once; subsequent version bumps can be pulled automatically on use.
 
 ## Sources
 
@@ -34,8 +49,8 @@ For text-only reasoning, `scripts/query.ts` returns a compact `{ok, action, summ
 - `Location` is a Scripting global API and is no longer imported from `"scripting"`.
 - `MapUtils` is used as a Scripting global, matching the official MapKit examples; only view components/hooks are imported from `"scripting"`.
 
-
 ## Recent UI behavior
+
 - nearby_line supports next/first/last/full schedule plus directionQuery and date.
 - Schedule cards support local date selection using KavNav minDate/maxDate.
 - Arrival ETAs use relative minutes only below one hour; from one hour onward they show the arrival clock time.
