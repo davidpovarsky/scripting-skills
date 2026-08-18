@@ -1,4 +1,4 @@
-# Israel Transit for Scripting — V4.3.0
+# Israel Transit for Scripting — V4.3.1
 
 A native Scripting skill for Israeli public transport.
 
@@ -15,18 +15,12 @@ For text-only reasoning, `scripts/query.ts` returns a compact `{ok, action, summ
 
 ## Automatic GitHub updates
 
-The `main` branch of `davidpovarsky/scripting-skills`, under `israel-transit/`, is the source of truth for the complete skill.
+Updates are handled natively by Scripting through `remoteResource`; no updater logic runs inside the transit renderer or query code.
 
-- `scripts/lib/auto-update.ts` checks the remote `skill.json` before normal rich and compact transit requests.
-- Checks are throttled to once every six hours so normal transit usage does not repeatedly hit GitHub.
-- When the remote `skill.json.version` is newer, the updater downloads the complete `israel-transit/` subtree first and only then writes the installed files.
-- The bundled `assets/israel_transit_companion/` files are mirrored at the same time into `FileManager.scriptsDirectory/israel_transit_companion`, so the Skill and its regular Scripting companion stay on the same release.
-- `skill.json` and the companion `script.json` are written last. If a filesystem write fails midway, the old version remains visible and a later invocation retries.
-- Update failures are best-effort and never replace a transit answer with an updater error.
-
-Every distributable change must bump `skill.json.version`. When companion files change, also bump `assets/israel_transit_companion/script.json.version`.
-
-> Bootstrap note: an installation that predates 4.3.0 does not yet contain the updater itself. Install/sync 4.3.0 once; subsequent version bumps can be pulled automatically on use.
+- `skill.json` points to `https://github.com/davidpovarsky/scripting-skills/tree/main/israel-transit`.
+- `assets/israel_transit_companion/script.json` points to `https://github.com/davidpovarsky/scripting-skills/tree/main/israel-transit/assets/israel_transit_companion`.
+- Both use `autoUpdateInterval: 21600` (six hours).
+- Bump `skill.json.version` for Skill releases, and bump the companion `script.json.version` whenever the companion changes.
 
 ## Sources
 
