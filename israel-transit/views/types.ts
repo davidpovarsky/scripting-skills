@@ -12,7 +12,7 @@ export type TransitConfig =
  | {type:"stop-board";stop:Stop;date:string;routes:any[];departures:Departure[];vehicles:Vehicle[];alerts:Alert[];lastVehicleReport?:string;neighbors?:any[];restrictions?:any;headways?:any[];lineFilter?:string;routeIdFilter?:string[];height?:number}
  | {type:"line-live";line:Line;stops?:Stop[];coordinates?:Coordinate[];vehicles:Vehicle[];alerts?:Alert[];lastVehicleReport?:string;height?:number}
  | {type:"line";line:Line;stops:Stop[];coordinates:Coordinate[];vehicles:Vehicle[];alerts:Alert[];routeChanges?:any[];lastVehicleReport?:string;liveOnly?:boolean;height?:number}
- | {type:"trip-plan";from:any;to:any;date?:string;itineraries:Itinerary[];areaAlerts?:any[];height?:number}
+ | {type:"trip-plan";from:any;to:any;date?:string;time?:string;arriveBy?:boolean;itineraries:Itinerary[];areaAlerts?:any[];height?:number}
  | {type:"schedule";scope:"stop"|"line"|"nearby-line";title?:string;date:string;trips:any[];stopCode?:string;routeId?:string;routeIds?:string[];lineNumber?:string;directionLabel?:string;routes?:any[];minDate?:string;maxDate?:string;mode?:"schedule"|"last"|"first";height?:number}
  | {type:"alerts";alerts:Alert[];height?:number}
  | {type:"shape";coordinates:Coordinate[];height?:number}
