@@ -143,3 +143,11 @@ Only when rich UI adds no value, execute one compact `query.ts` call. Use `detai
 ## Maintenance only
 
 Only while debugging/updating may implementation files or references be inspected.
+
+The canonical source is `davidpovarsky/scripting-skills`, branch `main`, subtree `israel-transit/`.
+- Keep `scripts/lib/auto-update.ts` enabled from both `scripts/transit-renderer.tsx` and `scripts/query.ts`.
+- The updater checks remote `skill.json.version` at most once every six hours. On a newer version it downloads the complete skill subtree before writing any installed file.
+- Mirror every file under `assets/israel_transit_companion/` into `FileManager.scriptsDirectory/israel_transit_companion` during the same update so the Skill and companion cannot intentionally drift between releases.
+- Keep update failures non-fatal to normal transit requests.
+- Bump `skill.json.version` for every release that should propagate. Also bump `assets/israel_transit_companion/script.json.version` whenever companion files change.
+- An installation older than 4.3.0 needs one bootstrap install/sync because those older files do not yet contain the updater; after 4.3.0 is installed, later version bumps update on use.
