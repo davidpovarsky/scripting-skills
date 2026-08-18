@@ -3,7 +3,6 @@ import { executeRich } from "./lib/transit"
 import { TransitRequest } from "./lib/types"
 import { saveRenderContext } from "./lib/context"
 import { runSavedTripEngagement } from "./lib/trip-engagement"
-import { maybeAutoUpdate } from "./lib/auto-update"
 import TransitRenderer from "../views/transit-renderer"
 import { TransitConfig } from "../views/types"
 
@@ -32,7 +31,7 @@ async function prepareRequest(props:Props):Promise<TransitRequest>{
 }
 function EngagementActionView({action}:{action?:EngagementAction}){
   const [loading,setLoading]=useState(true),[error,setError]=useState<string|undefined>(undefined),[done,setDone]=useState(false)
-  useEffect(()=>{let active=true;void(async()=>{try{await maybeAutoUpdate();if(!action)throw new Error("Missing engagement action");const result=await runSavedTripEngagement(action);if(!active)return;if(!result.ok)setError(result.message);else setDone(true)}catch(e){if(active)setError(e instanceof Error?e.message:String(e))}finally{if(active)setLoading(false)}})();return()=>{active=false}},[action])
+  useEffect(()=>{let active=true;void(async()=>{try{if(!action)throw new Error("Missing engagement action");const result=await runSavedTripEngagement(action);if(!active)return;if(!result.ok)setError(result.message);else setDone(true)}catch(e){if(active)setError(e instanceof Error?e.message:String(e))}finally{if(active)setLoading(false)}})();return()=>{active=false}},[action])
   if(loading)return <Loading/>
   if(error)return <ErrorCard message={error}/>
   return <SuccessCard message={action==="reminder"?H.reminder:H.live}/>
@@ -42,17 +41,16 @@ export default function TransitSkillView(props:Props){
   const [state,setState]=useState<State>({loading:!props.config,config:props.config})
   useEffect(()=>{
     let active=true
-    if(props.config){saveRenderContext(props.config);void maybeAutoUpdate();return()=>{active=false}}
+    if(props.config){saveRenderContext(props.config);return()=>{active=false}}
     void (async()=>{
       try{
-        await maybeAutoUpdate()
         const req=await prepareRequest(props)
         const bundle=await executeRich(req)
         if(!active)return
         if(!bundle.result.ok) setState({loading:false,error:bundle.result.error||"Unknown error"})
         else if(!bundle.renderConfig) setState({loading:false,error:"No rich view for this action"})
         else {const config=bundle.renderConfig as TransitConfig;saveRenderContext(config);setState({loading:false,config})}
-      }catch(e){if(active)setState({loading:false,error:e instanceof Error?e.message:String(e)})}
+      }catch(e){if(active)setState({loading:false,error:e instanceof Error?e.message:String(e))}
     })()
     return()=>{active=false}
   },[])
