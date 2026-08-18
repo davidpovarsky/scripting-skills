@@ -2,5 +2,9 @@
   "icon": "bus.fill",
   "color": "systemBlue",
   "iconImage": null,
-  "version": "4.3.0"
+  "version": "4.3.1",
+  "remoteResource": {
+    "url": "https://github.com/davidpovarsky/scripting-skills/tree/main/israel-transit",
+    "autoUpdateInterval": 21600
+  }
 }
