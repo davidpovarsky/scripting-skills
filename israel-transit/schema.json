@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "action"
+  ],
+  "properties": {
+    "action": {
+      "type": "string",
+      "enum": [
+        "geocode",
+        "search_stops",
+        "nearby_stops",
+        "nearby_line",
+        "search_lines",
+        "stop_board",
+        "stop_schedule",
+        "line_details",
+        "line_live",
+        "line_schedule",
+        "alerts",
+        "plan_trip",
+        "shape",
+        "stop_pois",
+        "stop_validations"
+      ]
+    },
+    "query": {
+      "type": "string"
+    },
+    "stopCode": {
+      "type": "string"
+    },
+    "stopId": {
+      "type": "string"
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lon": {
+      "type": "number"
+    },
+    "radius": {
+      "type": "number",
+      "minimum": 50,
+      "maximum": 5000
+    },
+    "max": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 30
+    },
+    "lineNumber": {
+      "type": "string"
+    },
+    "routeId": {
+      "type": "string"
+    },
+    "routeCode": {
+      "type": "string"
+    },
+    "patternId": {
+      "type": "string"
+    },
+    "shapeId": {
+      "type": "string"
+    },
+    "direction": {
+      "type": "string"
+    },
+    "alternative": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string"
+    },
+    "time": {
+      "type": "string"
+    },
+    "arriveBy": {
+      "type": "boolean"
+    },
+    "wheelchair": {
+      "type": "boolean"
+    },
+    "fromQuery": {
+      "type": "string"
+    },
+    "toQuery": {
+      "type": "string"
+    },
+    "fromLat": {
+      "type": "number"
+    },
+    "fromLon": {
+      "type": "number"
+    },
+    "fromName": {
+      "type": "string"
+    },
+    "toLat": {
+      "type": "number"
+    },
+    "toLon": {
+      "type": "number"
+    },
+    "toName": {
+      "type": "string"
+    },
+    "limit": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 50
+    },
+    "includeLive": {
+      "type": "boolean"
+    },
+    "includeAlerts": {
+      "type": "boolean"
+    },
+    "detail": {
+      "type": "string",
+      "enum": [
+        "compact",
+        "full"
+      ]
+    },
+    "useCurrentLocation": {
+      "type": "boolean"
+    },
+    "preferContext": {
+      "type": "boolean"
+    },
+    "itineraryIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 7
+    },
+    "legIndex": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 20
+    },
+    "directionQuery": {
+      "type": "string"
+    },
+    "departureMode": {
+      "type": "string",
+      "enum": [
+        "next",
+        "last",
+        "first",
+        "schedule"
+      ]
+    }
+  }
+}

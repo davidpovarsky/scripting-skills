@@ -1,0 +1,4 @@
+interface:
+  display_name: "Israel Transit"
+  short_description: "Israeli transit data and direct Scripting rich UI"
+  brand_color: "#007AFF"
