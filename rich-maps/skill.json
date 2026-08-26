@@ -1,0 +1,9 @@
+{
+  "color" : "systemGreen",
+  "icon" : "map",
+  "remoteResource" : {
+    "autoUpdateInterval" : 21600,
+    "hash" : "0f748860d100b4e0447016ab45c0cd9f",
+    "url" : "https:\/\/github.com\/ScriptingApp\/skills\/tree\/main\/rich-maps"
+  }
+}

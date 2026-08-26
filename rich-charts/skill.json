@@ -1,0 +1,9 @@
+{
+  "color" : "systemBlue",
+  "icon" : "chart.bar",
+  "remoteResource" : {
+    "autoUpdateInterval" : 21600,
+    "hash" : "9ba05df6becddc2f52465dd0b53241e6",
+    "url" : "https:\/\/github.com\/ScriptingApp\/skills\/tree\/main\/rich-charts"
+  }
+}

@@ -1,0 +1,137 @@
+---
+name: rich-charts
+description: Render rich, interactive charts (bar, line, pie, donut, area, scatter) from structured JSON data using SwiftUI Charts, shown inline in chat via ```scripting-file``` fenced code blocks. PROACTIVELY use this whenever the user shares data, asks about statistics, trends, comparisons, distributions, breakdowns, or anything quantitative — prefer rendering a rich visual chart over a plain text table or list.
+metadata:
+  display_name: "Rich Charts"
+  intent_patterns: "chart, graph, visualize data, bar chart, line chart, pie chart, donut chart, scatter plot, area chart, render chart, show chart"
+---
+
+# Purpose
+
+When the user asks to visualize data, show statistics, or render a chart, output a ` ```scripting-file ` block pointing to the chart component with the data as props.
+
+# Supported Charts
+
+| Type | Use Case |
+|------|----------|
+| `bar` | Compare values across categories |
+| `line` | Show trends over time |
+| `pie` | Show proportion distribution |
+| `donut` | Donut chart with center total |
+| `area` | Show quantity trends |
+| `point` | Scatter plot for relationships |
+
+# How to Render
+
+Output a `scripting-file` block with the data:
+
+````markdown
+```scripting-file
+{
+  "path": "/var/mobile/Library/Mobile Documents/iCloud~com~thomfang~Scripting/Documents/scripting-skills/rich-charts/scripts/chart-renderer.tsx",
+  "props": {
+    "config": {
+      "type": "bar",
+      "title": "月度销售",
+      "data": [
+        { "label": "1月", "value": 120 },
+        { "label": "2月", "value": 200 },
+        { "label": "3月", "value": 150 }
+      ]
+    },
+    "height": 300
+  }
+}
+```
+````
+
+# Data Format Examples
+
+## Bar/Line/Area Chart
+```json
+{
+  "type": "bar",
+  "title": "图表标题",
+  "data": [
+    { "label": "类别1", "value": 100 },
+    { "label": "类别2", "value": 200 }
+  ],
+  "options": { "color": "#4A90D9", "scrollable": "auto", "visibleCategoryCount": 10 }
+}
+```
+
+- `data`（单系列）与 `series`（多系列）互斥；不要同时提供。JSON props 使用字符串类别轴，不支持日期轴或 `unit`。
+
+## Multi-Series (Bar/Line/Area)
+```json
+{
+  "type": "line",
+  "title": "趋势对比",
+  "series": [
+    {
+      "id": "series-a",
+      "name": "系列A",
+      "data": [
+        { "label": "1月", "value": 100 },
+        { "label": "2月", "value": 150 }
+      ],
+      "color": "#4A90D9"
+    },
+    {
+      "id": "series-b",
+      "name": "系列B",
+      "data": [
+        { "label": "1月", "value": 80 },
+        { "label": "2月", "value": 120 }
+      ],
+      "color": "#E85D75"
+    }
+  ]
+}
+```
+
+## Pie/Donut Chart
+```json
+{
+  "type": "pie",
+  "title": "占比分布",
+  "data": [
+    { "category": "产品A", "value": 35 },
+    { "category": "产品B", "value": 25 },
+    { "category": "产品C", "value": 40 }
+  ]
+}
+```
+
+## Scatter Plot
+```json
+{
+  "type": "point",
+  "title": "相关性分析",
+  "data": [
+    { "x": 10, "y": 25 },
+    { "x": 20, "y": 35 },
+    { "x": 30, "y": 45 }
+  ]
+}
+```
+
+# Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `config` | object | Chart configuration (see examples above) |
+| `height` | number | Chart height in pixels (default: 300) |
+
+# Notes
+
+- `options.scrollable`（bar/line/area/areaStack）：`"auto"`（默认）、`true` 或 `false`。自动模式在类别超过可视窗口时启用 Charts 原生横向滚动，避免手机上把几十个横轴类别挤在一起。
+- `options.visibleCategoryCount`：滚动时同时显示的类别数，必须 ≥ 1；默认根据最长标签自适应为 6、8 或 10。
+- 对 20–50 个时间点，优先使用 `line` 并保留滚动。若显式设置 `scrollable: false`，图表会压缩为全局概览，横轴标签可能被系统抽稀。
+- `labelOnYAxis: true` 暂不自动开启纵向图内滚动，以避免和页面纵向 ScrollView 的手势冲突。
+- Supports light/dark mode automatically
+- Colors accept Scripting `Color` formats: keyword, hex, rgb/rgba, or hsl/hsla.
+- `series.id` is optional but, when supplied, must be non-empty and unique. It is the stable internal grouping/color key; `name` is display-only and may repeat. Without an `id`, the renderer assigns a per-input-order key. Series colors are bound to those keys and accompanied by an explicit legend.
+- Multi-series `line` uses a single category-grouped renderer with a fixed series-key color scale, so every path is independent and its color matches the explicit legend. Multi-series `area` renders independent non-stacked overlays; `bar` renders grouped bars (and respects `labelOnYAxis`).
+- Empty datasets show `暂无数据`; invalid JSON config (including `data` + `series`, duplicated ids, or invalid donut radii) shows a configuration error.
+- For large datasets (50+ points), prefer line chart over bar chart; dense category charts scroll horizontally by default rather than compressing every point into the device width.

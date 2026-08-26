@@ -1,0 +1,4 @@
+interface:
+  display_name: "Israel Transit"
+  short_description: "Israeli transit data, planning, and live monitoring"
+  brand_color: "#007AFF"

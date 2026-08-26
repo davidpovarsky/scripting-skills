@@ -1,0 +1,21 @@
+{
+  "color": "rgba(0,122,255,1)",
+  "contributors": [],
+  "name": "israel_transit_monitor",
+  "version": "1.1.0",
+  "iconImage": null,
+  "description": "Background monitor companion for Israel Transit arrivals, lines, alerts, trip changes, and observed segment travel-time history.",
+  "entry": "index.tsx",
+  "author": null,
+  "localizedDescriptions": {
+    "en": "Background monitor for Israel Transit with notifications, Live Activities, persistence, deduplication, multiple concurrent watches, and silent observed segment travel-time collection."
+  },
+  "remoteResource": null,
+  "runInApp": false,
+  "localizedNames": {
+    "en": "Israel Transit Monitor"
+  },
+  "permissions": null,
+  "icon": "bell.and.waves.left.and.right.fill",
+  "intentInputTypes": []
+}
