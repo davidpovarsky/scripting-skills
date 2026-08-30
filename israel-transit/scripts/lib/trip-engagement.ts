@@ -40,7 +40,7 @@ function stepLabel(leg?: Leg): string {
 }
 
 function compactLegs(itinerary: Itinerary) {
-  return itinerary.legs.slice(0, 8).map((leg, index) => ({
+  return itinerary.legs.map((leg, index) => ({
     index,
     mode: leg.mode,
     route: decodeDisplayText(leg.route) || undefined,
@@ -115,11 +115,12 @@ function loadSavedPayload(): any | null {
   }
 }
 
-async function launchTripViewer(): Promise<TripActionResult> {
+async function launchTripViewer(payload: unknown): Promise<TripActionResult> {
   try {
     await ensureTripViewerProject()
     await Script.run({
       name: tripViewerName(),
+      queryParameters: { payload: JSON.stringify(payload) },
       singleMode: true,
     })
     return { ok: true, message: "Live trip viewer opened." }
@@ -129,14 +130,15 @@ async function launchTripViewer(): Promise<TripActionResult> {
 }
 
 export async function openTripViewer(input: TripActionInput): Promise<TripActionResult> {
+  const payload = tripPayload(input)
   saveTripEngagementContext(input)
-  return launchTripViewer()
+  return launchTripViewer(payload)
 }
 
 export async function openSavedTripViewer(): Promise<TripActionResult> {
   const payload = loadSavedPayload()
   if (!payload) return { ok: false, message: "No selected trip is available. Open a trip plan first." }
-  return launchTripViewer()
+  return launchTripViewer(payload)
 }
 
 export async function runSavedTripEngagement(action: "live" | "reminder"): Promise<TripActionResult> {
