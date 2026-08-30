@@ -4,9 +4,9 @@
 
   ],
   "name" : "israel_transit_trip_view",
-  "version" : "1.0.6",
+  "version" : "1.1.0",
   "iconImage" : null,
-  "description" : "Full live trip view for Israel Transit with realtime vehicles and arrivals.",
+  "description" : "Full Israel Transit trip plan using the shared route UI with realtime vehicles and stop arrivals.",
   "entry" : "index.tsx",
   "author" : null,
   "localizedDescriptions" : {
@@ -18,7 +18,7 @@
     "zh" : "",
     "fr" : "",
     "ja" : "",
-    "en" : "Opens the selected Israel Transit journey in Scripting with live buses on the map and refreshed stop arrivals."
+    "en" : "Opens the complete selected Israel Transit route UI in Scripting and adds live buses, approach paths and refreshed stop arrivals."
   },
   "remoteResource" : null,
   "runInApp" : true,
