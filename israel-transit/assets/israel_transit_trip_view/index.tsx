@@ -118,8 +118,76 @@ function itineraryCoordinates(trip: TripPayload): Coordinate[] {
   return coords
 }
 
+function routeKey(value?: string): string {
+  return String(value || "").replace(/^1:/, "")
+}
+
+function textKey(value?: string): string {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[\/_.,;:()\[\]{}\-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function chooseDepartures(all: Departure[], leg: TripLegPayload): Departure[] {
+  if (!all.length) return []
+  const exactRoute = routeKey(leg.routeId)
+  if (exactRoute) {
+    const exact = all.filter(d => routeKey(d.routeId) === exactRoute)
+    if (exact.length) return exact.slice(0, 5)
+  }
+
+  const direction = textKey(leg.headsign)
+  if (direction) {
+    const terms = direction.split(" ").filter(term => term.length > 1)
+    const soft = all.filter(d => {
+      const destination = textKey(d.destination)
+      if (!destination) return false
+      if (destination.includes(direction) || direction.includes(destination)) return true
+      return terms.length > 0 && terms.some(term => destination.includes(term))
+    })
+    if (soft.length) return soft.slice(0, 5)
+  }
+
+  return all.slice(0, 5)
+}
+
+function bearingBetween(a: Coordinate, b: Coordinate): number {
+  const toRad = (value: number) => value * Math.PI / 180
+  const toDeg = (value: number) => value * 180 / Math.PI
+  const lat1 = toRad(a.latitude)
+  const lat2 = toRad(b.latitude)
+  const dLon = toRad(b.longitude - a.longitude)
+  const y = Math.sin(dLon) * Math.cos(lat2)
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon)
+  return (toDeg(Math.atan2(y, x)) + 360) % 360
+}
+
+function vehicleDirection(vehicle: Vehicle, routeCoordinates: Coordinate[]): number {
+  if (Number.isFinite(vehicle.bearing)) return ((Number(vehicle.bearing) % 360) + 360) % 360
+  if (!vehicle.coordinate || routeCoordinates.length < 2) return 0
+
+  let nearest = 0
+  let best = Number.POSITIVE_INFINITY
+  for (let i = 0; i < routeCoordinates.length; i++) {
+    const point = routeCoordinates[i]
+    const dLat = point.latitude - vehicle.coordinate.latitude
+    const dLon = point.longitude - vehicle.coordinate.longitude
+    const distance = dLat * dLat + dLon * dLon
+    if (distance < best) {
+      best = distance
+      nearest = i
+    }
+  }
+
+  const a = routeCoordinates[Math.max(0, Math.min(nearest, routeCoordinates.length - 2))]
+  const b = routeCoordinates[Math.max(1, Math.min(nearest + 1, routeCoordinates.length - 1))]
+  return bearingBetween(a, b)
+}
+
 function uniqueVehicles(states: Record<number, LegLiveState>, legs: TripLegPayload[]) {
-  const out: Array<{ vehicle: Vehicle; line: string; color: string }> = []
+  const out: Array<{ vehicle: Vehicle; line: string; color: string; routeCoordinates: Coordinate[] }> = []
   const seen = new Set<string>()
   for (const leg of legs) {
     const state = states[leg.index]
@@ -128,38 +196,71 @@ function uniqueVehicles(states: Record<number, LegLiveState>, legs: TripLegPaylo
       const key = String(vehicle.vehicleId || `${leg.index}:${vehicle.coordinate.latitude}:${vehicle.coordinate.longitude}`)
       if (seen.has(key)) continue
       seen.add(key)
-      out.push({ vehicle, line: String(leg.route || vehicle.lineNumber || ""), color: leg.color || "systemBlue" })
+      out.push({
+        vehicle,
+        line: String(leg.route || vehicle.lineNumber || ""),
+        color: leg.color || "systemBlue",
+        routeCoordinates: state?.routeCoordinates?.length ? state.routeCoordinates : (leg.coordinates || []),
+      })
     }
   }
   return out
 }
 
+async function loadArrivalBoard(leg: TripLegPayload): Promise<{ departures: Departure[]; error?: string }> {
+  const lineNumber = String(leg.route || "")
+  if (!lineNumber) return { departures: [], error: "חסר מספר קו למקטע" }
+
+  try {
+    let bundle: any
+    if (leg.fromStopCode) {
+      bundle = await executeRich({
+        action: "stop_board",
+        stopCode: String(leg.fromStopCode),
+        lineNumber,
+        maxResults: 20,
+        includeAlerts: false,
+      })
+    } else if (leg.fromCoordinate) {
+      bundle = await executeRich({
+        action: "nearby_line",
+        lat: leg.fromCoordinate.latitude,
+        lon: leg.fromCoordinate.longitude,
+        lineNumber,
+        departureMode: "next",
+        radius: 350,
+        maxResults: 20,
+        includeAlerts: false,
+      })
+    } else {
+      return { departures: [], error: "חסר קוד תחנה למקטע זה" }
+    }
+
+    const config = bundle.renderConfig as TransitConfig | undefined
+    if (config?.type !== "stop-board") {
+      return {
+        departures: [],
+        error: bundle.result?.ok === false ? (bundle.result.error || "לא ניתן לעדכן זמני הגעה") : "לא התקבל לוח תחנה",
+      }
+    }
+
+    return { departures: chooseDepartures(config.departures || [], leg) }
+  } catch (error) {
+    return { departures: [], error: error instanceof Error ? error.message : String(error) }
+  }
+}
+
 async function loadLegLive(leg: TripLegPayload): Promise<LegLiveState> {
   const index = leg.index
   const lineNumber = String(leg.route || "")
-  const stopCode = String(leg.fromStopCode || "")
   let departures: Departure[] = []
   let vehicles: Vehicle[] = []
   let routeCoordinates: Coordinate[] = []
   const errors: string[] = []
 
-  if (stopCode && lineNumber) {
-    try {
-      const board = await executeRich({
-        action: "stop_board",
-        stopCode,
-        lineNumber,
-        directionQuery: leg.headsign,
-        maxResults: 5,
-        includeAlerts: false,
-      })
-      const config = board.renderConfig as TransitConfig | undefined
-      if (config?.type === "stop-board") departures = config.departures.slice(0, 5)
-      else if (!board.result.ok) errors.push(board.result.error || "לא ניתן לעדכן זמני הגעה")
-    } catch (error) {
-      errors.push(error instanceof Error ? error.message : String(error))
-    }
-  }
+  const arrivals = await loadArrivalBoard(leg)
+  departures = arrivals.departures
+  if (arrivals.error) errors.push(arrivals.error)
 
   if (leg.routeId) {
     try {
@@ -216,7 +317,7 @@ function ArrivalCard({ leg, state }: { leg: TripLegPayload; state?: LegLiveState
         <Text font="caption" foregroundStyle="secondaryLabel">{state?.error ? "לא ניתן לעדכן כרגע" : "אין הגעות קרובות כרגע"}</Text>
       )}
       <HStack>
-        {state?.error ? <Text font="caption2" foregroundStyle="systemOrange" lineLimit={1}>{state.error}</Text> : null}
+        {state?.error ? <Text font="caption2" foregroundStyle="systemOrange" lineLimit={2}>{state.error}</Text> : null}
         <Spacer />
         <Text font="caption2" foregroundStyle="tertiaryLabel">מתרענן כל 20 שניות</Text>
       </HStack>
@@ -293,11 +394,14 @@ function TripLiveView({ trip }: { trip: TripPayload }) {
               leg.fromCoordinate ? <Marker key={`board-${i}`} coordinate={leg.fromCoordinate} title={`עלייה · קו ${leg.route || ""}`} tint="systemGreen" systemImage="arrow.up.circle.fill" /> : null,
               leg.toCoordinate ? <Marker key={`alight-${i}`} coordinate={leg.toCoordinate} title="ירידה" tint="systemOrange" systemImage="arrow.down.circle.fill" /> : null,
             ])}
-            {vehicles.map(({ vehicle, line, color }) => (
+            {vehicles.map(({ vehicle, line, color, routeCoordinates }) => (
               <Annotation key={`vehicle-${vehicle.vehicleId}`} coordinate={vehicle.coordinate!} title={`קו ${line}`} anchor="center">
-                <HStack spacing={4} padding={{ horizontal: 8, vertical: 6 }} background={color} clipShape={{ type: "rect", cornerRadius: 11 }}>
-                  <Image systemName="bus.fill" font="caption2" foregroundStyle="white" />
-                  <Text font="caption" fontWeight="bold" foregroundStyle="white">{line}</Text>
+                <HStack spacing={3} alignment="center">
+                  <VStack spacing={1} alignment="center">
+                    <Text font="caption2" fontWeight="bold" foregroundStyle={color} padding={{ horizontal: 5, vertical: 2 }} background="white" clipShape={{ type: "rect", cornerRadius: 6 }}>{line}</Text>
+                    <Image systemName="bus.fill" font="title2" foregroundStyle={color} />
+                  </VStack>
+                  <Image systemName="arrow.up.circle.fill" font="caption" foregroundStyle={color} rotationEffect={vehicleDirection(vehicle, routeCoordinates)} />
                 </HStack>
               </Annotation>
             ))}
