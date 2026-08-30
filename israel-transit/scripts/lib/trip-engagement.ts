@@ -1,4 +1,4 @@
-import { Safari, Script } from "scripting"
+import { Script } from "scripting"
 import type { Itinerary, Leg } from "../../views/types"
 import { decodeDisplayText } from "./normalize"
 import {
@@ -118,10 +118,11 @@ function loadSavedPayload(): any | null {
 async function launchTripViewer(): Promise<TripActionResult> {
   try {
     await ensureTripViewerProject()
-    const opened = await Safari.openURL(Script.createRunSingleURLScheme(tripViewerName()))
-    return opened
-      ? { ok: true, message: "Live trip viewer opened." }
-      : { ok: false, message: "Could not open live trip viewer." }
+    await Script.run({
+      name: tripViewerName(),
+      singleMode: true,
+    })
+    return { ok: true, message: "Live trip viewer opened." }
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : String(error) }
   }
