@@ -17,6 +17,27 @@ const PROJECTS: Record<CompanionKind, { name: string; source: string; files: str
   },
 }
 
+const TRIP_VIEWER_NAME = "israel_transit_trip_view"
+const TRIP_VIEWER_SOURCE = Path.join(SKILL_ROOT, "assets", TRIP_VIEWER_NAME)
+const TRIP_VIEWER_FILES: Array<{ source: string; target: string }> = [
+  { source: Path.join(TRIP_VIEWER_SOURCE, "index.tsx"), target: "index.tsx" },
+  { source: Path.join(TRIP_VIEWER_SOURCE, "script.json"), target: "script.json" },
+  ...[
+    "busnearby.ts",
+    "companion.ts",
+    "context.ts",
+    "http.ts",
+    "kavnav.ts",
+    "monitor-engagement.ts",
+    "normalize.ts",
+    "polyline.ts",
+    "time.ts",
+    "transit.ts",
+    "types.ts",
+  ].map(file => ({ source: Path.join(SKILL_ROOT, "scripts", "lib", file), target: Path.join("scripts", "lib", file) })),
+  { source: Path.join(SKILL_ROOT, "views", "types.ts"), target: Path.join("views", "types.ts") },
+]
+
 async function manifestVersion(configPath: string): Promise<string | undefined> {
   try {
     if (!(await FileManager.exists(configPath))) return undefined
@@ -29,6 +50,10 @@ async function manifestVersion(configPath: string): Promise<string | undefined> 
 
 export function companionName(kind: CompanionKind): string {
   return PROJECTS[kind].name
+}
+
+export function tripViewerName(): string {
+  return TRIP_VIEWER_NAME
 }
 
 export async function ensureCompanionProject(kind: CompanionKind): Promise<void> {
@@ -54,6 +79,29 @@ export async function ensureCompanionProject(kind: CompanionKind): Promise<void>
     await FileManager.writeAsString(Path.join(targetDir, file), await FileManager.readAsString(source))
   }
   await FileManager.writeAsString(Path.join(targetDir, "script.json"), await FileManager.readAsString(sourceConfig))
+}
+
+export async function ensureTripViewerProject(): Promise<void> {
+  const targetDir = Path.join(FileManager.scriptsDirectory, TRIP_VIEWER_NAME)
+  const sourceConfig = Path.join(TRIP_VIEWER_SOURCE, "script.json")
+  const sourceVersion = await manifestVersion(sourceConfig)
+  if (!sourceVersion) throw new Error(`Missing or invalid ${TRIP_VIEWER_NAME} source: script.json`)
+
+  let ready = (await manifestVersion(Path.join(targetDir, "script.json"))) === sourceVersion
+  if (ready) {
+    for (const file of TRIP_VIEWER_FILES) {
+      if (!(await FileManager.exists(Path.join(targetDir, file.target)))) { ready = false; break }
+    }
+  }
+  if (ready) return
+
+  await FileManager.createDirectory(targetDir, true)
+  for (const file of TRIP_VIEWER_FILES) {
+    if (!(await FileManager.exists(file.source))) throw new Error(`Missing ${TRIP_VIEWER_NAME} source: ${file.source}`)
+    const target = Path.join(targetDir, file.target)
+    await FileManager.createDirectory(Path.dirname(target), true)
+    await FileManager.writeAsString(target, await FileManager.readAsString(file.source))
+  }
 }
 
 export async function runCompanion(kind: CompanionKind, action: string, payload?: unknown, singleMode = false): Promise<CompanionResult | null> {
