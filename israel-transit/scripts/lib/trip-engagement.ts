@@ -1,6 +1,12 @@
+import { Safari, Script } from "scripting"
 import type { Itinerary, Leg } from "../../views/types"
 import { decodeDisplayText } from "./normalize"
-import { launchCompanion as launchBundledCompanion, runCompanion as runBundledCompanion } from "./companion"
+import {
+  ensureTripViewerProject,
+  launchCompanion as launchBundledCompanion,
+  runCompanion as runBundledCompanion,
+  tripViewerName,
+} from "./companion"
 
 type TripActionInput = {
   fromName: string
@@ -46,6 +52,9 @@ function compactLegs(itinerary: Itinerary) {
     to: decodeDisplayText(leg.to.name),
     fromStopCode: leg.from.stopCode,
     toStopCode: leg.to.stopCode,
+    fromCoordinate: leg.from.coordinate,
+    toCoordinate: leg.to.coordinate,
+    coordinates: leg.coordinates,
     startTime: leg.startTime,
     endTime: leg.endTime,
     durationSeconds: leg.durationSeconds,
@@ -103,6 +112,19 @@ function loadSavedPayload(): any | null {
     return parsed
   } catch {
     return null
+  }
+}
+
+export async function openTripViewer(input: TripActionInput): Promise<TripActionResult> {
+  try {
+    saveTripEngagementContext(input)
+    await ensureTripViewerProject()
+    const opened = await Safari.openURL(Script.createRunSingleURLScheme(tripViewerName()))
+    return opened
+      ? { ok: true, message: "Live trip viewer opened." }
+      : { ok: false, message: "Could not open live trip viewer." }
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : String(error) }
   }
 }
 
