@@ -19,6 +19,7 @@ import {
   useState,
 } from "scripting"
 import { executeRich } from "./scripts/lib/transit"
+import { formatArrivalHe } from "./scripts/lib/time"
 import type { Coordinate, Departure, TransitConfig, Vehicle } from "./views/types"
 
 type TripLegPayload = {
@@ -63,6 +64,12 @@ type LegLiveState = {
   error?: string
 }
 
+type ApproachSegment = {
+  legIndex: number
+  vehicleId: string
+  coordinates: Coordinate[]
+}
+
 const CONTEXT_FILE = FileManager.appGroupDocumentsDirectory + "/israel-transit-trip-action.json"
 const REFRESH_MS = 20_000
 const DEFAULT_REGION = {
@@ -94,12 +101,6 @@ function loadTrip(): TripPayload | null {
 function clock(ms?: number): string {
   if (!ms) return ""
   return new Date(ms).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })
-}
-
-function minuteLabel(minutes?: number): string {
-  if (!Number.isFinite(minutes)) return "—"
-  const value = Math.max(0, Math.round(Number(minutes)))
-  return value <= 0 ? "עכשיו" : `${value} דק׳`
 }
 
 function transitLegs(trip: TripPayload): TripLegPayload[] {
@@ -184,6 +185,65 @@ function vehicleDirection(vehicle: Vehicle, routeCoordinates: Coordinate[]): num
   const a = routeCoordinates[Math.max(0, Math.min(nearest, routeCoordinates.length - 2))]
   const b = routeCoordinates[Math.max(1, Math.min(nearest + 1, routeCoordinates.length - 1))]
   return bearingBetween(a, b)
+}
+
+function coordinateDistanceSquared(a: Coordinate, b: Coordinate): number {
+  const dLat = a.latitude - b.latitude
+  const dLon = a.longitude - b.longitude
+  return dLat * dLat + dLon * dLon
+}
+
+function nearestRouteIndex(coordinate: Coordinate, routeCoordinates: Coordinate[]): number {
+  let nearest = 0
+  let best = Number.POSITIVE_INFINITY
+  for (let i = 0; i < routeCoordinates.length; i++) {
+    const distance = coordinateDistanceSquared(coordinate, routeCoordinates[i])
+    if (distance < best) {
+      best = distance
+      nearest = i
+    }
+  }
+  return nearest
+}
+
+function routeSegmentToBoarding(vehicle: Vehicle, boarding: Coordinate, routeCoordinates: Coordinate[]): Coordinate[] {
+  if (!vehicle.coordinate || routeCoordinates.length < 2) return []
+  const vehicleIndex = nearestRouteIndex(vehicle.coordinate, routeCoordinates)
+  const boardingIndex = nearestRouteIndex(boarding, routeCoordinates)
+  const routeSlice = vehicleIndex <= boardingIndex
+    ? routeCoordinates.slice(vehicleIndex, boardingIndex + 1)
+    : routeCoordinates.slice(boardingIndex, vehicleIndex + 1).reverse()
+  return [vehicle.coordinate, ...routeSlice, boarding]
+}
+
+function matchingApproachVehicle(state?: LegLiveState): Vehicle | undefined {
+  if (!state) return undefined
+  for (const departure of state.departures) {
+    if (!departure.realtime || !departure.vehicleId) continue
+    const match = state.vehicles.find(vehicle => String(vehicle.vehicleId) === String(departure.vehicleId))
+    if (match?.coordinate) return match
+  }
+  return undefined
+}
+
+function approachSegments(states: Record<number, LegLiveState>, legs: TripLegPayload[]): ApproachSegment[] {
+  const segments: ApproachSegment[] = []
+  for (const leg of legs) {
+    if (!leg.fromCoordinate) continue
+    const state = states[leg.index]
+    const routeCoordinates = state?.routeCoordinates?.length ? state.routeCoordinates : []
+    const vehicle = matchingApproachVehicle(state)
+    if (!vehicle?.coordinate || routeCoordinates.length < 2) continue
+    const coordinates = routeSegmentToBoarding(vehicle, leg.fromCoordinate, routeCoordinates)
+    if (coordinates.length > 1) {
+      segments.push({
+        legIndex: leg.index,
+        vehicleId: String(vehicle.vehicleId),
+        coordinates,
+      })
+    }
+  }
+  return segments
 }
 
 function uniqueVehicles(states: Record<number, LegLiveState>, legs: TripLegPayload[]) {
@@ -291,34 +351,50 @@ async function loadLegLive(leg: TripLegPayload): Promise<LegLiveState> {
   }
 }
 
+function LineBadge({ line, color }: { line: string; color?: string }) {
+  return (
+    <VStack frame={{ minWidth: 34, height: 30 }} padding={{ horizontal: 7 }} background={color || "systemBlue"} clipShape={{ type: "rect", cornerRadius: 8 }} alignment="center">
+      <Text font="subheadline" fontWeight="bold" foregroundStyle="white">{line}</Text>
+    </VStack>
+  )
+}
+
+function DepartureTile({ departure }: { departure: Departure }) {
+  const live = departure.realtime
+  const arrivalClock = departure.predictedTime || departure.scheduledTime
+  const label = formatArrivalHe(departure.minutes, arrivalClock)
+  return (
+    <VStack spacing={0} padding={{ horizontal: 12, vertical: 10 }} frame={{ minWidth: 92, alignment: "center" }} background="systemGray6" clipShape={{ type: "rect", cornerRadius: 12 }} alignment="center">
+      <Text font="title3" fontWeight="bold" foregroundStyle={live ? "systemGreen" : "label"}>{label}</Text>
+    </VStack>
+  )
+}
+
 function ArrivalCard({ leg, state }: { leg: TripLegPayload; state?: LegLiveState }) {
   const departures = state?.departures || []
   return (
-    <VStack spacing={8} alignment="trailing" padding={12} background="systemGray6" clipShape={{ type: "rect", cornerRadius: 14 }}>
-      <HStack spacing={7}>
-        <Image systemName="bus.fill" foregroundStyle={leg.color || "systemBlue"} />
-        <Text font="headline" fontWeight="semibold">קו {leg.route || ""}</Text>
+    <VStack spacing={8} alignment="trailing" padding={{ horizontal: 2, vertical: 5 }}>
+      <HStack spacing={8}>
+        <LineBadge line={String(leg.route || "?")} color={leg.color || "systemBlue"} />
+        <Text font="subheadline" fontWeight="semibold" lineLimit={1}>{leg.headsign || "הגעות לתחנת העלייה"}</Text>
         <Spacer />
-        <Text font="caption" foregroundStyle="secondaryLabel">{leg.from || ""}</Text>
+        <Text font="caption" foregroundStyle="secondaryLabel" lineLimit={1}>{leg.from || ""}</Text>
       </HStack>
       {departures.length ? (
         <ScrollView axes="horizontal">
           <HStack spacing={8}>
             {departures.map((departure, i) => (
-              <VStack key={`${departure.tripId || departure.vehicleId || i}`} spacing={3} padding={{ horizontal: 10, vertical: 8 }} background={departure.realtime ? "systemBlue" : "systemGray5"} clipShape={{ type: "rect", cornerRadius: 11 }}>
-                <Text font="headline" fontWeight="bold" foregroundStyle={departure.realtime ? "white" : "label"}>{minuteLabel(departure.minutes)}</Text>
-                <Text font="caption2" foregroundStyle={departure.realtime ? "white" : "secondaryLabel"}>{departure.predictedTime || departure.scheduledTime || "—"}</Text>
-                {departure.realtime ? <Text font="caption2" foregroundStyle="white">חי</Text> : <Text font="caption2" foregroundStyle="tertiaryLabel">מתוכנן</Text>}
-              </VStack>
+              <DepartureTile key={`${departure.tripId || departure.vehicleId || i}`} departure={departure} />
             ))}
           </HStack>
         </ScrollView>
       ) : (
         <Text font="caption" foregroundStyle="secondaryLabel">{state?.error ? "לא ניתן לעדכן כרגע" : "אין הגעות קרובות כרגע"}</Text>
       )}
-      <HStack>
+      <HStack spacing={5}>
         {state?.error ? <Text font="caption2" foregroundStyle="systemOrange" lineLimit={2}>{state.error}</Text> : null}
         <Spacer />
+        <Image systemName="arrow.clockwise" font="caption2" foregroundStyle="tertiaryLabel" />
         <Text font="caption2" foregroundStyle="tertiaryLabel">מתרענן כל 20 שניות</Text>
       </HStack>
     </VStack>
@@ -360,8 +436,10 @@ function TripLiveView({ trip }: { trip: TripPayload }) {
   }, [])
 
   const vehicles = uniqueVehicles(states, legs)
+  const approaches = approachSegments(states, legs)
   const liveRouteCoords = legs.flatMap(leg => states[leg.index]?.routeCoordinates || [])
-  const mapCoords = baseCoords.length ? baseCoords : liveRouteCoords
+  const approachCoords = approaches.flatMap(segment => segment.coordinates)
+  const mapCoords = baseCoords.length ? [...baseCoords, ...approachCoords] : (approachCoords.length ? approachCoords : liveRouteCoords)
 
   useEffect(() => {
     if (!mapCoords.length) return
@@ -384,24 +462,25 @@ function TripLiveView({ trip }: { trip: TripPayload }) {
             </Button>
           </HStack>
 
-          <Map cameraPosition={camera} frame={{ height: 350 }} mapStyle={{ style: "standard" }} clipShape={{ type: "rect", cornerRadius: 16 }}>
+          <Map cameraPosition={camera} frame={{ height: 340 }} mapStyle={{ style: "standard" }} clipShape={{ type: "rect", cornerRadius: 16 }}>
             {trip.legs.map((leg, i) => {
               const coords = Array.isArray(leg.coordinates) && leg.coordinates.length > 1 ? leg.coordinates : (states[leg.index]?.routeCoordinates || [])
               if (coords.length < 2) return null
-              return <MapPolyline key={`leg-${i}`} coordinates={coords} strokeColor={leg.mode === "WALK" ? "secondaryLabel" : (leg.color || "systemBlue")} strokeStyle={{ lineWidth: leg.mode === "WALK" ? 3 : 6, dash: leg.mode === "WALK" ? [5, 5] : undefined, lineCap: "round", lineJoin: "round" }} />
+              return <MapPolyline key={`leg-${i}`} coordinates={coords} strokeColor={leg.mode === "WALK" ? "secondaryLabel" : (leg.color || "systemBlue")} strokeStyle={{ lineWidth: leg.mode === "WALK" ? 2 : 5, dash: leg.mode === "WALK" ? [5, 5] : undefined, lineCap: "round", lineJoin: "round" }} />
             })}
+            {approaches.map(segment => (
+              <MapPolyline key={`approach-${segment.legIndex}-${segment.vehicleId}`} coordinates={segment.coordinates} strokeColor="systemCyan" strokeStyle={{ lineWidth: 7, lineCap: "round", lineJoin: "round" }} />
+            ))}
             {trip.legs.flatMap((leg, i) => leg.mode === "WALK" ? [] : [
-              leg.fromCoordinate ? <Marker key={`board-${i}`} coordinate={leg.fromCoordinate} title={`עלייה · קו ${leg.route || ""}`} tint="systemGreen" systemImage="arrow.up.circle.fill" /> : null,
+              leg.fromCoordinate ? <Marker key={`board-${i}`} coordinate={leg.fromCoordinate} title={`עלייה · קו ${leg.route || ""}`} tint={leg.color || "systemBlue"} systemImage="arrow.up.circle.fill" /> : null,
               leg.toCoordinate ? <Marker key={`alight-${i}`} coordinate={leg.toCoordinate} title="ירידה" tint="systemOrange" systemImage="arrow.down.circle.fill" /> : null,
             ])}
             {vehicles.map(({ vehicle, line, color, routeCoordinates }) => (
               <Annotation key={`vehicle-${vehicle.vehicleId}`} coordinate={vehicle.coordinate!} title={`קו ${line}`} anchor="center">
-                <HStack spacing={3} alignment="center">
-                  <VStack spacing={1} alignment="center">
-                    <Text font="caption2" fontWeight="bold" foregroundStyle={color} padding={{ horizontal: 5, vertical: 2 }} background="white" clipShape={{ type: "rect", cornerRadius: 6 }}>{line}</Text>
-                    <Image systemName="bus.fill" font="title2" foregroundStyle={color} />
-                  </VStack>
-                  <Image systemName="arrow.up.circle.fill" font="caption" foregroundStyle={color} rotationEffect={vehicleDirection(vehicle, routeCoordinates)} />
+                <HStack spacing={4} alignment="center" padding={{ horizontal: 6, vertical: 4 }} background="white" clipShape={{ type: "rect", cornerRadius: 9 }}>
+                  <Image systemName="bus.fill" font="caption2" foregroundStyle={color} />
+                  <Text font="caption2" fontWeight="bold" foregroundStyle={color}>{line}</Text>
+                  <Image systemName="location.north.fill" font="caption2" foregroundStyle={color} rotationEffect={vehicleDirection(vehicle, routeCoordinates)} />
                 </HStack>
               </Annotation>
             ))}
@@ -416,7 +495,7 @@ function TripLiveView({ trip }: { trip: TripPayload }) {
             <Text font="caption2" foregroundStyle="tertiaryLabel">{updatedAt ? `עודכן ${clock(updatedAt)}` : "מעדכן..."}</Text>
           </HStack>
 
-          <VStack spacing={9}>
+          <VStack spacing={12}>
             {legs.map(leg => <ArrivalCard key={`arrival-${leg.index}`} leg={leg} state={states[leg.index]} />)}
           </VStack>
         </VStack>
