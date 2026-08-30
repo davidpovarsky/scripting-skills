@@ -115,9 +115,8 @@ function loadSavedPayload(): any | null {
   }
 }
 
-export async function openTripViewer(input: TripActionInput): Promise<TripActionResult> {
+async function launchTripViewer(): Promise<TripActionResult> {
   try {
-    saveTripEngagementContext(input)
     await ensureTripViewerProject()
     const opened = await Safari.openURL(Script.createRunSingleURLScheme(tripViewerName()))
     return opened
@@ -126,6 +125,17 @@ export async function openTripViewer(input: TripActionInput): Promise<TripAction
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : String(error) }
   }
+}
+
+export async function openTripViewer(input: TripActionInput): Promise<TripActionResult> {
+  saveTripEngagementContext(input)
+  return launchTripViewer()
+}
+
+export async function openSavedTripViewer(): Promise<TripActionResult> {
+  const payload = loadSavedPayload()
+  if (!payload) return { ok: false, message: "No selected trip is available. Open a trip plan first." }
+  return launchTripViewer()
 }
 
 export async function runSavedTripEngagement(action: "live" | "reminder"): Promise<TripActionResult> {
