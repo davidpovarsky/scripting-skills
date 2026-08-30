@@ -70,12 +70,22 @@ const DEFAULT_REGION = {
   span: { latitudeDelta: 0.05, longitudeDelta: 0.05 },
 }
 
+function validTrip(parsed: any): parsed is TripPayload {
+  return !!parsed && Array.isArray(parsed.legs) && Number.isFinite(parsed.startTime) && Number.isFinite(parsed.endTime)
+}
+
 function loadTrip(): TripPayload | null {
   try {
+    const rawPayload = Script.queryParameters?.payload
+    if (rawPayload) {
+      const parsed = JSON.parse(String(rawPayload))
+      if (validTrip(parsed)) return parsed
+    }
+  } catch {}
+  try {
     if (!FileManager.existsSync(CONTEXT_FILE)) return null
-    const parsed = JSON.parse(FileManager.readAsStringSync(CONTEXT_FILE)) as TripPayload
-    if (!parsed || !Array.isArray(parsed.legs) || !Number.isFinite(parsed.startTime) || !Number.isFinite(parsed.endTime)) return null
-    return parsed
+    const parsed = JSON.parse(FileManager.readAsStringSync(CONTEXT_FILE))
+    return validTrip(parsed) ? parsed : null
   } catch {
     return null
   }
