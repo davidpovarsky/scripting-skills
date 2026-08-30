@@ -1,0 +1,41 @@
+{
+  "color" : "rgba(0,122,255,1)",
+  "contributors" : [
+
+  ],
+  "name" : "israel_transit_trip_view",
+  "version" : "1.0.0",
+  "iconImage" : null,
+  "description" : "Full live trip view for Israel Transit with realtime vehicles and arrivals.",
+  "entry" : "index.tsx",
+  "author" : null,
+  "localizedDescriptions" : {
+    "ru" : "",
+    "it" : "",
+    "es" : "",
+    "de" : "",
+    "pt" : "",
+    "zh" : "",
+    "fr" : "",
+    "ja" : "",
+    "en" : "Opens the selected Israel Transit journey in Scripting with live buses on the map and refreshed stop arrivals."
+  },
+  "remoteResource" : null,
+  "runInApp" : true,
+  "localizedNames" : {
+    "de" : "",
+    "zh" : "",
+    "en" : "Israel Transit Live Trip",
+    "pt" : "",
+    "es" : "",
+    "fr" : "",
+    "it" : "",
+    "ru" : "",
+    "ja" : ""
+  },
+  "permissions" : null,
+  "icon" : "bus.fill",
+  "intentInputTypes" : [
+
+  ]
+}
