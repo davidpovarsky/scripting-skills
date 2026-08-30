@@ -31,7 +31,7 @@ async function main(){
     Script.exit()
     return
   }
-  await Navigation.present({element:<NavigationStack><ScrollView><TripPlanView from={plan.from} to={plan.to} itineraries={plan.itineraries} selectedIndex={undefined} initialSelectedIndex={plan.selectedIndex||0} date={plan.date} time={plan.time} arriveBy={plan.arriveBy===true} height={plan.height||260} liveMode={true} showOpenInScript={false}/></ScrollView></NavigationStack>})
+  await Navigation.present({element:<NavigationStack><ScrollView><TripPlanView from={plan.from} to={plan.to} itineraries={plan.itineraries} initialSelectedIndex={plan.selectedIndex||0} date={plan.date} time={plan.time} arriveBy={plan.arriveBy===true} height={plan.height||260} liveMode={true} showOpenInScript={false}/></ScrollView></NavigationStack>})
   Script.exit()
 }
 void main()
