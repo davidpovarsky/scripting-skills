@@ -314,19 +314,21 @@ function TripLiveView({ trip }: { trip: TripPayload }) {
 async function main() {
   const trip = loadTrip()
   if (!trip) {
-    await Navigation.present(
-      <NavigationStack>
-        <VStack spacing={10} padding={24}>
-          <Image systemName="exclamationmark.triangle.fill" font="title" foregroundStyle="systemOrange" />
-          <Text font="headline">אין מסלול שמור</Text>
-          <Text font="caption" foregroundStyle="secondaryLabel">פתח קודם מסלול תחבורה דרך ה-Agent ואז נסה שוב.</Text>
-        </VStack>
-      </NavigationStack>
-    )
+    await Navigation.present({
+      element: (
+        <NavigationStack>
+          <VStack spacing={10} padding={24}>
+            <Image systemName="exclamationmark.triangle.fill" font="title" foregroundStyle="systemOrange" />
+            <Text font="headline">אין מסלול שמור</Text>
+            <Text font="caption" foregroundStyle="secondaryLabel">פתח קודם מסלול תחבורה דרך ה-Agent ואז נסה שוב.</Text>
+          </VStack>
+        </NavigationStack>
+      ),
+    })
     Script.exit()
     return
   }
-  await Navigation.present(<TripLiveView trip={trip} />)
+  await Navigation.present({ element: <TripLiveView trip={trip} /> })
   Script.exit()
 }
 
