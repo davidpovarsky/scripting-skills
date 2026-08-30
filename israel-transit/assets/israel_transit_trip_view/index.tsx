@@ -139,6 +139,7 @@ async function loadLegLive(leg: TripLegPayload): Promise<LegLiveState> {
         action: "stop_board",
         stopCode,
         lineNumber,
+        directionQuery: leg.headsign,
         maxResults: 5,
         includeAlerts: false,
       })
@@ -195,7 +196,7 @@ function ArrivalCard({ leg, state }: { leg: TripLegPayload; state?: LegLiveState
             {departures.map((departure, i) => (
               <VStack key={`${departure.tripId || departure.vehicleId || i}`} spacing={3} padding={{ horizontal: 10, vertical: 8 }} background={departure.realtime ? "systemBlue" : "systemGray5"} clipShape={{ type: "rect", cornerRadius: 11 }}>
                 <Text font="headline" fontWeight="bold" foregroundStyle={departure.realtime ? "white" : "label"}>{minuteLabel(departure.minutes)}</Text>
-                <Text font="caption2" foregroundStyle={departure.realtime ? "white" : "secondaryLabel"}>{clock(Date.parse(String(departure.predictedTime || departure.scheduledTime || "")))}</Text>
+                <Text font="caption2" foregroundStyle={departure.realtime ? "white" : "secondaryLabel"}>{departure.predictedTime || departure.scheduledTime || "—"}</Text>
                 {departure.realtime ? <Text font="caption2" foregroundStyle="white">חי</Text> : <Text font="caption2" foregroundStyle="tertiaryLabel">מתוכנן</Text>}
               </VStack>
             ))}
@@ -216,7 +217,7 @@ function ArrivalCard({ leg, state }: { leg: TripLegPayload; state?: LegLiveState
 function TripLiveView({ trip }: { trip: TripPayload }) {
   const legs = transitLegs(trip)
   const baseCoords = itineraryCoordinates(trip)
-  const region = MapUtils.regionFromCoordinates(baseCoords, 0.22) || DEFAULT_REGION
+  const region = (baseCoords.length ? MapUtils.regionFromCoordinates(baseCoords, 0.22) : undefined) || DEFAULT_REGION
   const camera = useObservable(MapCameraPosition.region(region))
   const [states, setStates] = useState<Record<number, LegLiveState>>({})
   const [refreshing, setRefreshing] = useState(true)
