@@ -33,9 +33,12 @@ const TRIP_VIEWER_FILES: Array<{ source: string; target: string }> = [
     "polyline.ts",
     "time.ts",
     "transit.ts",
+    "trip-engagement.ts",
     "types.ts",
   ].map(file => ({ source: Path.join(SKILL_ROOT, "scripts", "lib", file), target: Path.join("scripts", "lib", file) })),
   { source: Path.join(SKILL_ROOT, "views", "types.ts"), target: Path.join("views", "types.ts") },
+  { source: Path.join(SKILL_ROOT, "views", "loading-view.tsx"), target: Path.join("views", "loading-view.tsx") },
+  { source: Path.join(SKILL_ROOT, "views", "trip-plan-view.tsx"), target: Path.join("views", "trip-plan-view.tsx") },
 ]
 
 async function manifestVersion(configPath: string): Promise<string | undefined> {
