@@ -4,7 +4,7 @@
 
   ],
   "name" : "israel_transit_trip_view",
-  "version" : "1.0.1",
+  "version" : "1.0.2",
   "iconImage" : null,
   "description" : "Full live trip view for Israel Transit with realtime vehicles and arrivals.",
   "entry" : "index.tsx",
