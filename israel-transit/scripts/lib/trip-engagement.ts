@@ -14,6 +14,17 @@ type TripActionInput = {
   itinerary: Itinerary
 }
 
+type TripPlanViewerInput = {
+  from: any
+  to: any
+  itineraries: Itinerary[]
+  selectedIndex?: number
+  date?: string
+  time?: string
+  arriveBy?: boolean
+  height?: number
+}
+
 type TripAction = "schedule_trip_reminder" | "start_live_activity"
 type TripActionResult = { ok: boolean; message: string }
 type CompanionResult = { ok?: boolean; message?: string }
@@ -127,6 +138,21 @@ async function launchTripViewer(payload: unknown): Promise<TripActionResult> {
   } catch (error) {
     return { ok: false, message: error instanceof Error ? error.message : String(error) }
   }
+}
+
+export async function openTripPlanViewer(input: TripPlanViewerInput): Promise<TripActionResult> {
+  const selectedIndex = Math.max(0, Math.min(Number(input.selectedIndex || 0), Math.max(0, input.itineraries.length - 1)))
+  return launchTripViewer({
+    kind: "israel-transit-trip-plan",
+    from: input.from,
+    to: input.to,
+    itineraries: input.itineraries,
+    selectedIndex,
+    date: input.date,
+    time: input.time,
+    arriveBy: input.arriveBy === true,
+    height: input.height,
+  })
 }
 
 export async function openTripViewer(input: TripActionInput): Promise<TripActionResult> {
