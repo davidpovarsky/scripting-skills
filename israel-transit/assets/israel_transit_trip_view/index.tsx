@@ -161,7 +161,7 @@ async function loadLegLive(leg: TripLegPayload): Promise<LegLiveState> {
         limit: 40,
       })
       const config = live.renderConfig as TransitConfig | undefined
-      if (config?.type === "line") {
+      if (config?.type === "line" || config?.type === "line-live") {
         vehicles = config.vehicles || []
         routeCoordinates = config.coordinates || []
       } else if (!live.result.ok) errors.push(live.result.error || "לא ניתן לעדכן מיקום אוטובוסים")
